@@ -177,11 +177,22 @@ class _ControlPanelState extends State<ControlPanel> {
                 provider.setClipDurationSeconds(seconds);
               }
             },
-            buttonIcon: Icons.flag,
-            buttonColor: Colors.red,
-            buttonTooltip: '设置结束点为当前时间',
+            buttonIcon: Icons.check,
+            buttonColor: Colors.green,
+            buttonTooltip: '确认持续时间',
             onButtonPressed: provider.isInitialized
-                ? () => provider.setClipEndToCurrent()
+                ? () {
+                    final seconds = double.tryParse(_durationController.text);
+                    if (seconds != null) {
+                      provider.setClipDurationSeconds(seconds);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('持续时间已确认'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    }
+                  }
                 : null,
           ),
 
@@ -285,11 +296,22 @@ class _ControlPanelState extends State<ControlPanel> {
               }
             },
             suffix: IconButton(
-              icon: const Icon(Icons.flag, size: 18),
-              color: Colors.red,
-              tooltip: '设置结束点为当前时间',
+              icon: const Icon(Icons.check, size: 18),
+              color: Colors.green,
+              tooltip: '确认持续时间',
               onPressed: provider.isInitialized
-                  ? () => provider.setClipEndToCurrent()
+                  ? () {
+                      final seconds = double.tryParse(_durationController.text);
+                      if (seconds != null) {
+                        provider.setClipDurationSeconds(seconds);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('持续时间已确认'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      }
+                    }
                   : null,
               constraints: const BoxConstraints(
                 minWidth: 32,
