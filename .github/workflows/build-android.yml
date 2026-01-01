@@ -54,8 +54,8 @@ jobs:
       - name: Build APK
         working-directory: ./video_editor
         env:
-          GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=512m -Dorg.gradle.daemon=false"
-          JAVA_OPTS: "-Xmx4g"
+          GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g -Dorg.gradle.daemon=false"
+          JAVA_OPTS: "-Xmx6g"
         run: |
           # 停止现有 Gradle daemon
           ./android/gradlew --stop || true
