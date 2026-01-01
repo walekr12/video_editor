@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/video_file.dart';
 import '../models/clip_settings.dart';
@@ -14,9 +15,12 @@ enum ExportState {
 }
 
 /// 导出状态管理Provider
-/// 注意：由于packages.arthenica.com无法访问，FFmpeg功能暂时不可用
-/// 网络恢复后可以重新集成FFmpeg
+/// 使用原生 Android MediaMuxer API 进行视频裁剪，无需依赖外部服务器
 class ExportProvider extends ChangeNotifier {
+  /// 原生方法通道
+  static const MethodChannel _channel = MethodChannel('com.example.video_editor/trimmer');
+  static const EventChannel _eventChannel = EventChannel('com.example.video_editor/progress');
+
   /// 导出状态
   ExportState _state = ExportState.idle;
   ExportState get state => _state;
@@ -32,9 +36,6 @@ class ExportProvider extends ChangeNotifier {
   /// 导出文件路径
   String? _outputPath;
   String? get outputPath => _outputPath;
-
-  /// 总时长（毫秒）
-  int _totalDurationMs = 0;
 
   /// 是否正在导出
   bool get isExporting => _state == ExportState.exporting || _state == ExportState.preparing;
@@ -69,7 +70,7 @@ class ExportProvider extends ChangeNotifier {
   }
 
   /// 导出视频裁剪片段
-  /// 注意：FFmpeg暂时不可用，此功能将显示提示信息
+  /// 使用原生 Android API，无需依赖 FFmpeg
   Future<bool> exportClip(VideoFile video, ClipSettings clipSettings) async {
     if (isExporting) return false;
 
@@ -86,36 +87,54 @@ class ExportProvider extends ChangeNotifier {
       _outputPath = '$exportDir/$outputFileName';
 
       // 计算时间参数
-      final startSeconds = clipSettings.startMs / 1000.0;
-      final durationSeconds = clipSettings.durationMs / 1000.0;
-      _totalDurationMs = clipSettings.durationMs;
+      final startMs = clipSettings.startMs;
+      final endMs = clipSettings.startMs + clipSettings.durationMs;
 
-      debugPrint('准备导出: 开始=${startSeconds}s, 时长=${durationSeconds}s');
+      debugPrint('准备导出: 开始=${startMs}ms, 结束=${endMs}ms');
+      debugPrint('输入路径: ${video.path}');
       debugPrint('输出路径: $_outputPath');
 
       _state = ExportState.exporting;
       notifyListeners();
 
-      // TODO: FFmpeg功能暂时不可用
-      // 由于packages.arthenica.com无法访问，暂时无法下载FFmpeg��
-      // 网络恢复后取消下面注释并重新添加ffmpeg_kit_flutter依赖:
-      // 
-      // final command = '-y -ss $startSeconds -i "${video.path}" -t $durationSeconds -c:v libx264 -c:a aac -preset fast -crf 23 "$_outputPath"';
-      // final session = await FFmpegKit.executeAsync(command, ...);
-      
-      // 模拟导出进度
-      for (int i = 0; i <= 100; i += 10) {
-        await Future.delayed(const Duration(milliseconds: 100));
-        _progress = i / 100.0;
+      // 监听进度事件
+      _eventChannel.receiveBroadcastStream().listen(
+        (progress) {
+          if (progress is int) {
+            _progress = progress / 100.0;
+            notifyListeners();
+          }
+        },
+        onError: (error) {
+          debugPrint('进度监听错误: $error');
+        },
+      );
+
+      // 调用原生裁剪方法
+      final result = await _channel.invokeMethod('trimVideo', {
+        'inputPath': video.path,
+        'outputPath': _outputPath,
+        'startMs': startMs,
+        'endMs': endMs,
+      });
+
+      if (result != null) {
+        _state = ExportState.success;
+        _progress = 1.0;
+        _outputPath = result as String;
+        debugPrint('导出成功: $_outputPath');
         notifyListeners();
+        return true;
+      } else {
+        throw Exception('裁剪返回空结果');
       }
 
-      // 暂时显示功能不可用的提示
+    } on PlatformException catch (e) {
       _state = ExportState.error;
-      _errorMessage = 'FFmpeg导出功能暂时不可用\n\n原因：packages.arthenica.com 无法访问\n\n解决方案：\n1. 确保网络连接正常\n2. 尝试使用VPN访问\n3. 稍后重试\n\n裁剪参数已记录：\n开始时间: ${startSeconds.toStringAsFixed(2)}s\n持续时间: ${durationSeconds.toStringAsFixed(2)}s';
+      _errorMessage = '导出失败: ${e.message}\n\n错误代码: ${e.code}';
+      debugPrint(_errorMessage);
       notifyListeners();
       return false;
-
     } catch (e) {
       _state = ExportState.error;
       _errorMessage = '导出失败: $e';
