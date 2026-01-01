@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/video_provider.dart';
-import '../models/clip_settings.dart';
 
 /// 自定义时间轴进度条 - 带裁剪区间标记
 class TimelineSlider extends StatefulWidget {
@@ -79,12 +78,14 @@ class _TimelineSliderState extends State<TimelineSlider> {
               },
               onHorizontalDragEnd: (details) {
                 _isDragging = false;
-                provider.seekToRatio(_dragValue);
+                // 拖动结束时，更新开始时间（保持持续时间不变）
+                provider.seekToRatioAndUpdateClipStart(_dragValue);
               },
               onTapUp: (details) {
                 final box = context.findRenderObject() as RenderBox;
                 final ratio = (details.localPosition.dx / box.size.width).clamp(0.0, 1.0);
-                provider.seekToRatio(ratio);
+                // 点击时也更新开始时间（保持持续时间不变）
+                provider.seekToRatioAndUpdateClipStart(ratio);
               },
               child: Container(
                 height: 40,
@@ -184,7 +185,7 @@ class _TimelinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final trackY = size.height / 2;
-    final trackHeight = 6.0;
+    const trackHeight = 6.0;
     final trackRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, trackY - trackHeight / 2, size.width, trackHeight),
       const Radius.circular(3),
@@ -207,7 +208,7 @@ class _TimelinePainter extends CustomPainter {
         const Radius.circular(3),
       );
       final clipPaint = Paint()
-        ..color = Colors.amber.withOpacity(0.3);
+        ..color = Colors.amber.withValues(alpha: 0.3);
       canvas.drawRRect(clipRect, clipPaint);
 
       // 裁剪区间边框

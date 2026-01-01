@@ -126,7 +126,7 @@ class VideoEditorApp extends StatelessWidget {
             activeTrackColor: Colors.amber,
             inactiveTrackColor: Colors.grey.shade700,
             thumbColor: Colors.white,
-            overlayColor: Colors.amber.withOpacity(0.2),
+            overlayColor: Colors.amber.withValues(alpha: 0.2),
           ),
           
           // SnackBar主题
@@ -152,7 +152,7 @@ class VideoEditorApp extends StatelessWidget {
               vertical: 12,
             ),
             hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withValues(alpha: 0.3),
             ),
           ),
           

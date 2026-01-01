@@ -85,13 +85,13 @@ class VideoMonitor extends StatelessWidget {
                         Icon(
                           Icons.play_circle_outline,
                           size: 80,
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           '选择视频开始编辑',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                             fontSize: 16,
                           ),
                         ),
@@ -120,7 +120,7 @@ class VideoMonitor extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(

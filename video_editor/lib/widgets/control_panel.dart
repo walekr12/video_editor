@@ -7,7 +7,9 @@ import '../models/clip_settings.dart';
 
 /// 底部控制面板组件
 class ControlPanel extends StatefulWidget {
-  const ControlPanel({super.key});
+  final bool isLandscape;
+  
+  const ControlPanel({super.key, this.isLandscape = false});
 
   @override
   State<ControlPanel> createState() => _ControlPanelState();
@@ -107,129 +109,241 @@ class _ControlPanelState extends State<ControlPanel> {
           ),
 
           // 参数设置区域
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Consumer<VideoProvider>(
-              builder: (context, provider, _) {
-                final clipSettings = provider.clipSettings;
-                
-                // 更新输入框文本
-                _startTimeController.text = clipSettings.formattedStart;
-                _durationController.text = clipSettings.durationSeconds.toStringAsFixed(2);
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.all(widget.isLandscape ? 12 : 16),
+              child: Consumer<VideoProvider>(
+                builder: (context, provider, _) {
+                  final clipSettings = provider.clipSettings;
+                  
+                  // 更新输入框文本
+                  _startTimeController.text = clipSettings.formattedStart;
+                  _durationController.text = clipSettings.durationSeconds.toStringAsFixed(2);
 
-                return Row(
-                  children: [
-                    // 开始时间
-                    Expanded(
-                      child: _ParameterField(
-                        label: '开始时间',
-                        controller: _startTimeController,
-                        hint: '00:00.00',
-                        enabled: provider.isInitialized,
-                        onSubmitted: (value) {
-                          final ms = ClipSettings.parseTime(value);
-                          if (ms != null) {
-                            provider.setClipStart(ms);
-                          }
-                        },
-                        suffix: IconButton(
-                          icon: const Icon(Icons.timer, size: 18),
-                          color: Colors.amber,
-                          tooltip: '设为当前时间',
-                          onPressed: provider.isInitialized
-                              ? () => provider.setClipStartToCurrent()
-                              : null,
-                          constraints: const BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          padding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 16),
-
-                    // 持续时间
-                    Expanded(
-                      child: _ParameterField(
-                        label: '持续时间（秒）',
-                        controller: _durationController,
-                        hint: '0.00',
-                        enabled: provider.isInitialized,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        onSubmitted: (value) {
-                          final seconds = double.tryParse(value);
-                          if (seconds != null) {
-                            provider.setClipDurationSeconds(seconds);
-                          }
-                        },
-                        suffix: IconButton(
-                          icon: const Icon(Icons.flag, size: 18),
-                          color: Colors.red,
-                          tooltip: '设置结束点为当前时间',
-                          onPressed: provider.isInitialized
-                              ? () => provider.setClipEndToCurrent()
-                              : null,
-                          constraints: const BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          padding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 16),
-
-                    // 快捷操作
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '快捷操作',
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            _QuickButton(
-                              icon: Icons.first_page,
-                              tooltip: '跳到开始点',
-                              onPressed: provider.isInitialized
-                                  ? () => provider.seekToClipStart()
-                                  : null,
-                            ),
-                            const SizedBox(width: 4),
-                            _QuickButton(
-                              icon: Icons.play_circle_outline,
-                              tooltip: '预览裁剪片段',
-                              onPressed: provider.isInitialized
-                                  ? () => provider.previewClip()
-                                  : null,
-                            ),
-                            const SizedBox(width: 4),
-                            _QuickButton(
-                              icon: Icons.last_page,
-                              tooltip: '跳到结束点',
-                              onPressed: provider.isInitialized
-                                  ? () => provider.seekToClipEnd()
-                                  : null,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              },
+                  // 横屏时使用垂直布局
+                  if (widget.isLandscape) {
+                    return _buildLandscapeContent(provider, clipSettings);
+                  }
+                  
+                  // 竖屏时使用水平布局
+                  return _buildPortraitContent(provider, clipSettings);
+                },
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// 横屏内容布局 - 垂直排列，字体更大
+  Widget _buildLandscapeContent(VideoProvider provider, ClipSettings clipSettings) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 开始时间
+          _LandscapeParameterField(
+            label: '开始时间',
+            controller: _startTimeController,
+            hint: '00:00.00',
+            enabled: provider.isInitialized,
+            onSubmitted: (value) {
+              final ms = ClipSettings.parseTime(value);
+              if (ms != null) {
+                provider.setClipStart(ms);
+              }
+            },
+            buttonIcon: Icons.timer,
+            buttonColor: Colors.amber,
+            buttonTooltip: '设为当前时间',
+            onButtonPressed: provider.isInitialized
+                ? () => provider.setClipStartToCurrent()
+                : null,
+          ),
+
+          const SizedBox(height: 12),
+
+          // 持续时间
+          _LandscapeParameterField(
+            label: '持续时间（秒）',
+            controller: _durationController,
+            hint: '0.00',
+            enabled: provider.isInitialized,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onSubmitted: (value) {
+              final seconds = double.tryParse(value);
+              if (seconds != null) {
+                provider.setClipDurationSeconds(seconds);
+              }
+            },
+            buttonIcon: Icons.flag,
+            buttonColor: Colors.red,
+            buttonTooltip: '设置结束点为当前时间',
+            onButtonPressed: provider.isInitialized
+                ? () => provider.setClipEndToCurrent()
+                : null,
+          ),
+
+          const SizedBox(height: 16),
+
+          // 快捷操作 - 横向排列，按钮更大
+          const Text(
+            '快捷操作',
+            style: TextStyle(
+              color: Colors.white54,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _LandscapeQuickButton(
+                  icon: Icons.first_page,
+                  label: '开始点',
+                  onPressed: provider.isInitialized
+                      ? () => provider.seekToClipStart()
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _LandscapeQuickButton(
+                  icon: Icons.play_circle_outline,
+                  label: '预览',
+                  onPressed: provider.isInitialized
+                      ? () => provider.previewClip()
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _LandscapeQuickButton(
+                  icon: Icons.last_page,
+                  label: '结束点',
+                  onPressed: provider.isInitialized
+                      ? () => provider.seekToClipEnd()
+                      : null,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 竖屏内容布局 - 水平排列
+  Widget _buildPortraitContent(VideoProvider provider, ClipSettings clipSettings) {
+    return Row(
+      children: [
+        // 开始时间
+        Expanded(
+          child: _ParameterField(
+            label: '开始时间',
+            controller: _startTimeController,
+            hint: '00:00.00',
+            enabled: provider.isInitialized,
+            onSubmitted: (value) {
+              final ms = ClipSettings.parseTime(value);
+              if (ms != null) {
+                provider.setClipStart(ms);
+              }
+            },
+            suffix: IconButton(
+              icon: const Icon(Icons.timer, size: 18),
+              color: Colors.amber,
+              tooltip: '设为当前时间',
+              onPressed: provider.isInitialized
+                  ? () => provider.setClipStartToCurrent()
+                  : null,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 16),
+
+        // 持续时间
+        Expanded(
+          child: _ParameterField(
+            label: '持续时间（秒）',
+            controller: _durationController,
+            hint: '0.00',
+            enabled: provider.isInitialized,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onSubmitted: (value) {
+              final seconds = double.tryParse(value);
+              if (seconds != null) {
+                provider.setClipDurationSeconds(seconds);
+              }
+            },
+            suffix: IconButton(
+              icon: const Icon(Icons.flag, size: 18),
+              color: Colors.red,
+              tooltip: '设置结束点为当前时间',
+              onPressed: provider.isInitialized
+                  ? () => provider.setClipEndToCurrent()
+                  : null,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 16),
+
+        // 快捷操作
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '快捷操作',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                _QuickButton(
+                  icon: Icons.first_page,
+                  tooltip: '跳到开始点',
+                  onPressed: provider.isInitialized
+                      ? () => provider.seekToClipStart()
+                      : null,
+                ),
+                const SizedBox(width: 4),
+                _QuickButton(
+                  icon: Icons.play_circle_outline,
+                  tooltip: '预览裁剪片段',
+                  onPressed: provider.isInitialized
+                      ? () => provider.previewClip()
+                      : null,
+                ),
+                const SizedBox(width: 4),
+                _QuickButton(
+                  icon: Icons.last_page,
+                  tooltip: '跳到结束点',
+                  onPressed: provider.isInitialized
+                      ? () => provider.seekToClipEnd()
+                      : null,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -289,7 +403,7 @@ class _ParameterField extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: hint,
                     hintStyle: TextStyle(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
@@ -344,6 +458,162 @@ class _QuickButton extends StatelessWidget {
               size: 20,
               color: onPressed != null ? Colors.white70 : Colors.white30,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 横屏参数输入字段 - 更大的字体和按钮
+class _LandscapeParameterField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final String hint;
+  final bool enabled;
+  final TextInputType? keyboardType;
+  final ValueChanged<String>? onSubmitted;
+  final IconData buttonIcon;
+  final Color buttonColor;
+  final String buttonTooltip;
+  final VoidCallback? onButtonPressed;
+
+  const _LandscapeParameterField({
+    required this.label,
+    required this.controller,
+    required this.hint,
+    required this.buttonIcon,
+    required this.buttonColor,
+    required this.buttonTooltip,
+    this.enabled = true,
+    this.keyboardType,
+    this.onSubmitted,
+    this.onButtonPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2D2D2D),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFF3D3D3D)),
+                ),
+                child: TextField(
+                  controller: controller,
+                  enabled: enabled,
+                  keyboardType: keyboardType,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontFamily: 'monospace',
+                  ),
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    isDense: true,
+                  ),
+                  onSubmitted: onSubmitted,
+                  inputFormatters: keyboardType == const TextInputType.numberWithOptions(decimal: true)
+                      ? [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))]
+                      : null,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Material(
+              color: buttonColor.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(6),
+              child: InkWell(
+                onTap: onButtonPressed,
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  child: Tooltip(
+                    message: buttonTooltip,
+                    child: Icon(
+                      buttonIcon,
+                      size: 24,
+                      color: onButtonPressed != null ? buttonColor : Colors.white30,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// 横屏快捷按钮 - 更大尺寸带文字
+class _LandscapeQuickButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _LandscapeQuickButton({
+    required this.icon,
+    required this.label,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF3D3D3D),
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 22,
+                color: onPressed != null ? Colors.white70 : Colors.white30,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: onPressed != null ? Colors.white70 : Colors.white30,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
       ),

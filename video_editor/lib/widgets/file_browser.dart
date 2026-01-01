@@ -213,13 +213,13 @@ class _FileBrowserState extends State<FileBrowser> {
                         Icon(
                           Icons.video_library_outlined,
                           size: 48,
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           '暂无视频',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                             fontSize: 14,
                           ),
                         ),
@@ -227,7 +227,7 @@ class _FileBrowserState extends State<FileBrowser> {
                         Text(
                           '点击上方按钮导入视频',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.3),
+                            color: Colors.white.withValues(alpha: 0.3),
                             fontSize: 12,
                           ),
                         ),
@@ -326,7 +326,7 @@ class _VideoListItem extends StatelessWidget {
                     Text(
                       '${video.extension.toUpperCase()} • ${video.formattedDuration}',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                         fontSize: 11,
                       ),
                     ),

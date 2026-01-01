@@ -191,6 +191,29 @@ class VideoProvider extends ChangeNotifier {
     await seekTo(position);
   }
 
+  /// 拖动进度条时更新开始时间（保持持续时间不变）
+  Future<void> seekToRatioAndUpdateClipStart(double ratio) async {
+    if (_controller == null) return;
+    final position = (durationMs * ratio).toInt();
+    await seekTo(position);
+    // 更新开始时间，保持持续时间不变
+    setClipStartKeepDuration(position);
+  }
+
+  /// 设置裁剪开始时间（保持持续时间不变）
+  void setClipStartKeepDuration(int startMs) {
+    final currentDuration = _clipSettings.durationMs;
+    // 确保开始时间不会导致结束时间超出视频长度
+    final maxStart = durationMs - currentDuration;
+    final clampedStart = startMs.clamp(0, maxStart > 0 ? maxStart : 0);
+    
+    _clipSettings = _clipSettings.copyWith(
+      startMs: clampedStart,
+      durationMs: currentDuration,
+    );
+    notifyListeners();
+  }
+
   /// 上一帧
   Future<void> previousFrame() async {
     if (_controller == null) return;

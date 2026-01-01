@@ -20,22 +20,25 @@ class EditorScreen extends StatelessWidget {
     }
   }
 
-  /// 横屏布局：左侧资源管理器 + 中间监视器 + 底部控制面板
+  /// 横屏布局：左侧资源管理器 + 中间监视器 + 右侧控制面板
   Widget _buildLandscapeLayout(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E1E1E),
         elevation: 0,
+        toolbarHeight: 40, // 横屏时缩小标题栏
         title: const Row(
           children: [
-            Icon(Icons.movie_edit, color: Colors.amber, size: 24),
-            SizedBox(width: 10),
+            Icon(Icons.movie_edit, color: Colors.amber, size: 20),
+            SizedBox(width: 8),
             Text(
               '视频编辑器',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -44,44 +47,43 @@ class EditorScreen extends StatelessWidget {
         actions: [
           // 帮助按钮
           IconButton(
-            icon: const Icon(Icons.help_outline, color: Colors.white54),
+            icon: const Icon(Icons.help_outline, color: Colors.white54, size: 20),
             tooltip: '使用帮助',
             onPressed: () => _showHelpDialog(context),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
-      body: Column(
+      body: Row(
         children: [
-          // 主要区域：左侧文件浏览器 + 中间监视器
-          Expanded(
-            flex: 7, // 占70%
-            child: Row(
-              children: [
-                // 左侧资源管理器
-                SizedBox(
-                  width: 220,
-                  child: const FileBrowser(),
-                ),
-                
-                // 分隔线
-                Container(
-                  width: 1,
-                  color: const Color(0xFF3D3D3D),
-                ),
-                
-                // 中间监视器（视频播放区域）
-                const Expanded(
-                  child: VideoMonitor(),
-                ),
-              ],
-            ),
+          // 左侧资源管理器（较窄）
+          const SizedBox(
+            width: 180,
+            child: FileBrowser(),
           ),
           
-          // 底部控制面板
-          const SizedBox(
-            height: 140,
-            child: ControlPanel(),
+          // 分隔线
+          Container(
+            width: 1,
+            color: const Color(0xFF3D3D3D),
+          ),
+          
+          // 中间监视器（视频播放区域）- 可以较小
+          const Expanded(
+            flex: 5,
+            child: VideoMonitor(),
+          ),
+          
+          // 分隔线
+          Container(
+            width: 1,
+            color: const Color(0xFF3D3D3D),
+          ),
+          
+          // 右侧控制面板 - 更大空间
+          SizedBox(
+            width: screenHeight > 400 ? 280 : 240,
+            child: const ControlPanel(isLandscape: true),
           ),
         ],
       ),
