@@ -1,0 +1,38 @@
+name: video_editor
+description: "专业视频编辑器 - 支持帧级精准控制与视频裁剪导出"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  
+  # 状态管理
+  provider: ^6.1.2
+  
+  # 视频播放器
+  video_player: ^2.9.2
+  
+  # 文件选择与权限
+  file_picker: ^8.1.7
+  permission_handler: ^11.3.1
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  
+  # 注意：FFmpeg库暂时被移除，因为packages.arthenica.com无法访问
+  # 网络恢复后可以重新添加：ffmpeg_kit_flutter: ^6.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,89 @@
+# GitHub Actions workflow - 自动发布 Release 版本
+name: Release APK
+
+# 触发条件：创建版本标签时触发 (如 v1.0.0)
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build and Release APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许创建 Release
+    
+    steps:
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 获取版本号
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      # 3. 设置 Java 环境 (JDK 17)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      # 4. 设置 Flutter 环境
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      # 5. 获取依赖
+      - name: Get dependencies
+        working-directory: ./video_editor
+        run: flutter pub get
+
+      # 6. 构建 Release APK
+      - name: Build APK
+        working-directory: ./video_editor
+        run: flutter build apk --release
+
+      # 7. 构建分包 APK
+      - name: Build Split APKs
+        working-directory: ./video_editor
+        run: flutter build apk --release --split-per-abi
+
+      # 8. 重命名 APK 文件
+      - name: Rename APKs
+        run: |
+          cd video_editor/build/app/outputs/flutter-apk/
+          mv app-release.apk video_editor_v${{ steps.version.outputs.VERSION }}.apk
+          mv app-arm64-v8a-release.apk video_editor_v${{ steps.version.outputs.VERSION }}_arm64-v8a.apk
+          mv app-armeabi-v7a-release.apk video_editor_v${{ steps.version.outputs.VERSION }}_armeabi-v7a.apk
+          mv app-x86_64-release.apk video_editor_v${{ steps.version.outputs.VERSION }}_x86_64.apk
+
+      # 9. 创建 GitHub Release
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Video Editor v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## 📱 Video Editor v${{ steps.version.outputs.VERSION }}
+            
+            ### 下载说明
+            - **video_editor_v${{ steps.version.outputs.VERSION }}.apk** - 通用版本（较大，兼容所有设备）
+            - **video_editor_v${{ steps.version.outputs.VERSION }}_arm64-v8a.apk** - 适用于现代 64 位手机（推荐）
+            - **video_editor_v${{ steps.version.outputs.VERSION }}_armeabi-v7a.apk** - 适用于老旧 32 位手机
+            - **video_editor_v${{ steps.version.outputs.VERSION }}_x86_64.apk** - 适用于模拟器或 x86 设备
+            
+            ### 更新内容
+            - 请查看 commit 历史了解详细更新
+            
+          files: |
+            video_editor/build/app/outputs/flutter-apk/video_editor_*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
