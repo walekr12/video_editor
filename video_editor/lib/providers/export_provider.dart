@@ -37,11 +37,29 @@ class ExportProvider extends ChangeNotifier {
   String? _outputPath;
   String? get outputPath => _outputPath;
 
+  /// 用户指定的输出目录
+  String? _customOutputDir;
+  String? get customOutputDir => _customOutputDir;
+
   /// 是否正在导出
   bool get isExporting => _state == ExportState.exporting || _state == ExportState.preparing;
 
+  /// 设置自定义输出目录
+  void setCustomOutputDir(String? dir) {
+    _customOutputDir = dir;
+    notifyListeners();
+  }
+
   /// 获取导出目录
   Future<String> _getExportDirectory() async {
+    // 如果用户指定了输出目录，使用用户的
+    if (_customOutputDir != null && _customOutputDir!.isNotEmpty) {
+      final customDir = Directory(_customOutputDir!);
+      if (await customDir.exists()) {
+        return _customOutputDir!;
+      }
+    }
+    
     // 优先使用外部存储
     final externalDir = await getExternalStorageDirectory();
     if (externalDir != null) {
@@ -61,12 +79,40 @@ class ExportProvider extends ChangeNotifier {
     return exportDir.path;
   }
 
+  /// 获取下一个导出序号
+  Future<int> _getNextExportIndex(String exportDir) async {
+    final dir = Directory(exportDir);
+    if (!await dir.exists()) {
+      return 1;
+    }
+    
+    final files = await dir.list().toList();
+    int maxIndex = 0;
+    
+    // 查找形如 N_Xs.mp4 的文件，获取最大序号
+    final pattern = RegExp(r'^(\d+)_\d+s\.mp4$');
+    for (var entity in files) {
+      if (entity is File) {
+        final fileName = entity.path.split('/').last.split('\\').last;
+        final match = pattern.firstMatch(fileName);
+        if (match != null) {
+          final index = int.tryParse(match.group(1)!) ?? 0;
+          if (index > maxIndex) {
+            maxIndex = index;
+          }
+        }
+      }
+    }
+    
+    return maxIndex + 1;
+  }
+
   /// 生成输出文件名
-  String _generateOutputFileName(String originalName) {
-    final now = DateTime.now();
-    final timestamp = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
-    final baseName = originalName.replaceAll(RegExp(r'\.[^.]+$'), '');
-    return '${baseName}_clip_$timestamp.mp4';
+  /// 格式：序号_时长s.mp4（如 1_5s.mp4, 2_10s.mp4）
+  Future<String> _generateOutputFileName(String exportDir, int durationMs) async {
+    final nextIndex = await _getNextExportIndex(exportDir);
+    final durationSeconds = (durationMs / 1000).round();
+    return '${nextIndex}_${durationSeconds}s.mp4';
   }
 
   /// 导出视频裁剪片段
@@ -83,7 +129,9 @@ class ExportProvider extends ChangeNotifier {
     try {
       // 获取导出目录
       final exportDir = await _getExportDirectory();
-      final outputFileName = _generateOutputFileName(video.name);
+      
+      // 生成规范化的文件名：序号_时长s.mp4
+      final outputFileName = await _generateOutputFileName(exportDir, clipSettings.durationMs);
       _outputPath = '$exportDir/$outputFileName';
 
       // 计算时间参数

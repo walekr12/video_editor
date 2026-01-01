@@ -292,6 +292,32 @@ class VideoProvider extends ChangeNotifier {
     await play();
   }
 
+  /// 获取当前视频在列表中的索引
+  int get currentVideoIndex {
+    if (_currentVideo == null || _videoFiles.isEmpty) return -1;
+    return _videoFiles.indexWhere((v) => v.path == _currentVideo!.path);
+  }
+
+  /// 是否可以切换到上一个视频
+  bool get canSelectPrevious => currentVideoIndex > 0;
+
+  /// 是否可以切换到下一个视频
+  bool get canSelectNext => currentVideoIndex >= 0 && currentVideoIndex < _videoFiles.length - 1;
+
+  /// 选择上一个视频
+  Future<void> selectPreviousVideo() async {
+    if (!canSelectPrevious) return;
+    final prevIndex = currentVideoIndex - 1;
+    await selectVideo(_videoFiles[prevIndex]);
+  }
+
+  /// 选择下一个视频
+  Future<void> selectNextVideo() async {
+    if (!canSelectNext) return;
+    final nextIndex = currentVideoIndex + 1;
+    await selectVideo(_videoFiles[nextIndex]);
+  }
+
   /// 清除选择
   void clearSelection() {
     _disposeController();

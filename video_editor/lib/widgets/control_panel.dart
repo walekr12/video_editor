@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../providers/video_provider.dart';
 import '../providers/export_provider.dart';
 import '../models/clip_settings.dart';
@@ -24,6 +25,30 @@ class _ControlPanelState extends State<ControlPanel> {
     _startTimeController.dispose();
     _durationController.dispose();
     super.dispose();
+  }
+
+  /// 选择输出目录
+  Future<void> _pickOutputFolder(BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.getDirectoryPath();
+      if (result != null && mounted) {
+        final exportProvider = context.read<ExportProvider>();
+        exportProvider.setCustomOutputDir(result);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('输出目录已设置: ${result.split(RegExp(r'[/\\]')).last}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('选择输出目录失败: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('选择目录失败: $e')),
+        );
+      }
+    }
   }
 
   /// 显示导出对话框
@@ -82,6 +107,26 @@ class _ControlPanelState extends State<ControlPanel> {
                   ),
                 ),
                 const Spacer(),
+                // 设置输出目录按钮
+                Consumer<ExportProvider>(
+                  builder: (context, exportProvider, _) {
+                    return IconButton(
+                      icon: const Icon(Icons.folder_special, size: 20),
+                      color: exportProvider.customOutputDir != null 
+                          ? Colors.green 
+                          : Colors.white70,
+                      tooltip: exportProvider.customOutputDir != null
+                          ? '输出目录: ${exportProvider.customOutputDir!.split(RegExp(r'[/\\]')).last}'
+                          : '设置输出目录',
+                      onPressed: () => _pickOutputFolder(context),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
                 // 导出按钮
                 Consumer<VideoProvider>(
                   builder: (context, provider, _) {
@@ -198,9 +243,9 @@ class _ControlPanelState extends State<ControlPanel> {
 
           const SizedBox(height: 16),
 
-          // 快捷操作 - 横向排列，按钮更大
+          // 切换视频 - 横向排列
           const Text(
-            '快捷操作',
+            '切换视频',
             style: TextStyle(
               color: Colors.white54,
               fontSize: 14,
@@ -212,30 +257,20 @@ class _ControlPanelState extends State<ControlPanel> {
             children: [
               Expanded(
                 child: _LandscapeQuickButton(
-                  icon: Icons.first_page,
-                  label: '开始点',
-                  onPressed: provider.isInitialized
-                      ? () => provider.seekToClipStart()
+                  icon: Icons.skip_previous,
+                  label: '上一个',
+                  onPressed: provider.canSelectPrevious
+                      ? () => provider.selectPreviousVideo()
                       : null,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _LandscapeQuickButton(
-                  icon: Icons.play_circle_outline,
-                  label: '预览',
-                  onPressed: provider.isInitialized
-                      ? () => provider.previewClip()
-                      : null,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _LandscapeQuickButton(
-                  icon: Icons.last_page,
-                  label: '结束点',
-                  onPressed: provider.isInitialized
-                      ? () => provider.seekToClipEnd()
+                  icon: Icons.skip_next,
+                  label: '下一个',
+                  onPressed: provider.canSelectNext
+                      ? () => provider.selectNextVideo()
                       : null,
                 ),
               ),
@@ -324,12 +359,12 @@ class _ControlPanelState extends State<ControlPanel> {
 
         const SizedBox(width: 16),
 
-        // 快捷操作
+        // 切换视频
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '快捷操作',
+              '切换',
               style: TextStyle(
                 color: Colors.white54,
                 fontSize: 12,
@@ -339,26 +374,18 @@ class _ControlPanelState extends State<ControlPanel> {
             Row(
               children: [
                 _QuickButton(
-                  icon: Icons.first_page,
-                  tooltip: '跳到开始点',
-                  onPressed: provider.isInitialized
-                      ? () => provider.seekToClipStart()
+                  icon: Icons.skip_previous,
+                  tooltip: '上一个视频',
+                  onPressed: provider.canSelectPrevious
+                      ? () => provider.selectPreviousVideo()
                       : null,
                 ),
                 const SizedBox(width: 4),
                 _QuickButton(
-                  icon: Icons.play_circle_outline,
-                  tooltip: '预览裁剪片段',
-                  onPressed: provider.isInitialized
-                      ? () => provider.previewClip()
-                      : null,
-                ),
-                const SizedBox(width: 4),
-                _QuickButton(
-                  icon: Icons.last_page,
-                  tooltip: '跳到结束点',
-                  onPressed: provider.isInitialized
-                      ? () => provider.seekToClipEnd()
+                  icon: Icons.skip_next,
+                  tooltip: '下一个视频',
+                  onPressed: provider.canSelectNext
+                      ? () => provider.selectNextVideo()
                       : null,
                 ),
               ],

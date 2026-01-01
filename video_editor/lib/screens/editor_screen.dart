@@ -90,7 +90,7 @@ class EditorScreen extends StatelessWidget {
     );
   }
 
-  /// 竖屏布局：上部监视器 + 中部资源列表 + 底部控制面板
+  /// 竖屏布局：上部监视器 + 控制面板 + 底部资源列表
   Widget _buildPortraitLayout(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
@@ -122,10 +122,16 @@ class EditorScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // 监视器区域（占40%）
+          // 监视器区域（占50%）
           const Expanded(
-            flex: 4,
+            flex: 5,
             child: VideoMonitor(),
+          ),
+          
+          // 控制面板（紧跟监视器，方便操作）
+          const SizedBox(
+            height: 130,
+            child: ControlPanel(),
           ),
           
           // 分隔线
@@ -134,16 +140,10 @@ class EditorScreen extends StatelessWidget {
             color: const Color(0xFF3D3D3D),
           ),
           
-          // 资源列表（占30%）
+          // 资源列表（底部，占剩余空间）
           const Expanded(
             flex: 3,
             child: FileBrowser(),
-          ),
-          
-          // 底部控制面板
-          const SizedBox(
-            height: 160,
-            child: ControlPanel(),
           ),
         ],
       ),
