@@ -281,13 +281,14 @@ class _ControlPanelState extends State<ControlPanel> {
     );
   }
 
-  /// 竖屏内容布局 - 水平排列
+  /// 竖屏内容布局 - 垂直排列，���免挤压
   Widget _buildPortraitContent(VideoProvider provider, ClipSettings clipSettings) {
-    return Row(
-      children: [
-        // 开始时间
-        Expanded(
-          child: _ParameterField(
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 开始时间
+          _ParameterField(
             label: '开始时间',
             controller: _startTimeController,
             hint: '00:00.00',
@@ -312,13 +313,11 @@ class _ControlPanelState extends State<ControlPanel> {
               padding: EdgeInsets.zero,
             ),
           ),
-        ),
 
-        const SizedBox(width: 16),
+          const SizedBox(height: 12),
 
-        // 持续时间
-        Expanded(
-          child: _ParameterField(
+          // 持续时间
+          _ParameterField(
             label: '持续时间（秒）',
             controller: _durationController,
             hint: '0.00',
@@ -355,44 +354,49 @@ class _ControlPanelState extends State<ControlPanel> {
               padding: EdgeInsets.zero,
             ),
           ),
-        ),
 
-        const SizedBox(width: 16),
+          const SizedBox(height: 12),
 
-        // 切换视频
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '切换',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 12,
+          // 切换视频 - 横向排列按钮
+          Row(
+            children: [
+              const Text(
+                '切换视频',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                _QuickButton(
-                  icon: Icons.skip_previous,
-                  tooltip: '上一个视频',
-                  onPressed: provider.canSelectPrevious
-                      ? () => provider.selectPreviousVideo()
-                      : null,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _PortraitQuickButton(
+                        icon: Icons.skip_previous,
+                        label: '上一个',
+                        onPressed: provider.canSelectPrevious
+                            ? () => provider.selectPreviousVideo()
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _PortraitQuickButton(
+                        icon: Icons.skip_next,
+                        label: '下一个',
+                        onPressed: provider.canSelectNext
+                            ? () => provider.selectNextVideo()
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                _QuickButton(
-                  icon: Icons.skip_next,
-                  tooltip: '下一个视频',
-                  onPressed: provider.canSelectNext
-                      ? () => provider.selectNextVideo()
-                      : null,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -617,6 +621,54 @@ class _LandscapeParameterField extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// 竖屏快捷按钮 - 紧凑尺寸带文字
+class _PortraitQuickButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _PortraitQuickButton({
+    required this.icon,
+    required this.label,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF3D3D3D),
+      borderRadius: BorderRadius.circular(4),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: onPressed != null ? Colors.white70 : Colors.white30,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: onPressed != null ? Colors.white70 : Colors.white30,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
