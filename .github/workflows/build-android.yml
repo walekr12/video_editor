@@ -50,34 +50,15 @@ jobs:
         run: flutter analyze --no-fatal-infos
         continue-on-error: true
 
-      # 7. 构建 Release APK
+      # 7. 构建 Release APK (仅 arm64 加快速度)
       - name: Build APK
         working-directory: ./video_editor
-        run: flutter build apk --release
+        run: flutter build apk --release --target-platform android-arm64
 
-      # 8. 重命名 APK 文件（添加版本号和日期）
-      - name: Rename APK
-        run: |
-          cd video_editor/build/app/outputs/flutter-apk/
-          mv app-release.apk video_editor_v1.0.0_$(date +%Y%m%d).apk
-
-      # 9. 上传 APK 产物
+      # 8. 上传 APK 产物
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: video_editor/build/app/outputs/flutter-apk/*.apk
-          retention-days: 30
-
-      # 10. 构建分包 APK (按 ABI 分开，可选)
-      - name: Build Split APKs
-        working-directory: ./video_editor
-        run: flutter build apk --release --split-per-abi
-
-      # 11. 上传分包 APK
-      - name: Upload Split APKs
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-split-apks
-          path: video_editor/build/app/outputs/flutter-apk/*-release.apk
           retention-days: 30
