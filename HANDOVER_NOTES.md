@@ -1,5 +1,3 @@
-# 视频编辑器项目交接笔记
-
 ## 项目概述
 这是一个 Flutter Android 视频编辑器应用，主要用于视频裁剪功能。使用原生 Android MediaMuxer 进行无损视频裁剪。
 
