@@ -29,12 +29,15 @@ class _ControlPanelState extends State<ControlPanel> {
 
   /// 选择输出目录
   Future<void> _pickOutputFolder(BuildContext context) async {
+    // 在 async 前保存 context 相关引用
+    final exportProvider = context.read<ExportProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    
     try {
       final result = await FilePicker.platform.getDirectoryPath();
       if (result != null && mounted) {
-        final exportProvider = context.read<ExportProvider>();
         exportProvider.setCustomOutputDir(result);
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('输出目录已设置: ${result.split(RegExp(r'[/\\]')).last}'),
             duration: const Duration(seconds: 2),
@@ -44,8 +47,26 @@ class _ControlPanelState extends State<ControlPanel> {
     } catch (e) {
       debugPrint('选择输出目录失败: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text('选择目录失败: $e')),
+        );
+      }
+    }
+  }
+
+  /// 保存持续时间为默认值
+  Future<void> _saveDuration(VideoProvider provider) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final seconds = double.tryParse(_durationController.text);
+    if (seconds != null) {
+      provider.setClipDurationSeconds(seconds);
+      await provider.saveDefaultDurationSeconds(seconds);
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('已保存默认持续时间: $seconds秒'),
+            duration: const Duration(seconds: 1),
+          ),
         );
       }
     }
@@ -226,22 +247,7 @@ class _ControlPanelState extends State<ControlPanel> {
             buttonColor: Colors.green,
             buttonTooltip: '确认并保存为默认值',
             onButtonPressed: provider.isInitialized
-                ? () async {
-                    final seconds = double.tryParse(_durationController.text);
-                    if (seconds != null) {
-                      provider.setClipDurationSeconds(seconds);
-                      // 保存为默认持续时间
-                      await provider.saveDefaultDurationSeconds(seconds);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('已保存默认持续时间: ${seconds}秒'),
-                            duration: const Duration(seconds: 1),
-                          ),
-                        );
-                      }
-                    }
-                  }
+                ? () => _saveDuration(provider)
                 : null,
           ),
 
@@ -338,22 +344,7 @@ class _ControlPanelState extends State<ControlPanel> {
               color: Colors.green,
               tooltip: '确认并保存为默认值',
               onPressed: provider.isInitialized
-                  ? () async {
-                      final seconds = double.tryParse(_durationController.text);
-                      if (seconds != null) {
-                        provider.setClipDurationSeconds(seconds);
-                        // 保存为默认持续时间
-                        await provider.saveDefaultDurationSeconds(seconds);
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('已保存默认持续时间: ${seconds}秒'),
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
-                        }
-                      }
-                    }
+                  ? () => _saveDuration(provider)
                   : null,
               constraints: const BoxConstraints(
                 minWidth: 32,
@@ -484,44 +475,6 @@ class _ParameterField extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// 快捷按钮
-class _QuickButton extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
-
-  const _QuickButton({
-    required this.icon,
-    required this.tooltip,
-    this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF3D3D3D),
-      borderRadius: BorderRadius.circular(4),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          width: 36,
-          height: 36,
-          alignment: Alignment.center,
-          child: Tooltip(
-            message: tooltip,
-            child: Icon(
-              icon,
-              size: 20,
-              color: onPressed != null ? Colors.white70 : Colors.white30,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
