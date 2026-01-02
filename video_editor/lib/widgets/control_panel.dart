@@ -224,18 +224,22 @@ class _ControlPanelState extends State<ControlPanel> {
             },
             buttonIcon: Icons.check,
             buttonColor: Colors.green,
-            buttonTooltip: '确认持续时间',
+            buttonTooltip: '确认并保存为默认值',
             onButtonPressed: provider.isInitialized
-                ? () {
+                ? () async {
                     final seconds = double.tryParse(_durationController.text);
                     if (seconds != null) {
                       provider.setClipDurationSeconds(seconds);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('持续时间已确认'),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
+                      // 保存为默认持续时间
+                      await provider.saveDefaultDurationSeconds(seconds);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('已保存默认持续时间: ${seconds}秒'),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      }
                     }
                   }
                 : null,
@@ -332,18 +336,22 @@ class _ControlPanelState extends State<ControlPanel> {
             suffix: IconButton(
               icon: const Icon(Icons.check, size: 18),
               color: Colors.green,
-              tooltip: '确认持续时间',
+              tooltip: '确认并保存为默认值',
               onPressed: provider.isInitialized
-                  ? () {
+                  ? () async {
                       final seconds = double.tryParse(_durationController.text);
                       if (seconds != null) {
                         provider.setClipDurationSeconds(seconds);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('持续时间已确认'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
+                        // 保存为默认持续时间
+                        await provider.saveDefaultDurationSeconds(seconds);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('已保存默认持续时间: ${seconds}秒'),
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        }
                       }
                     }
                   : null,

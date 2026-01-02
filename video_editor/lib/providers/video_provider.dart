@@ -1,11 +1,59 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/video_file.dart';
 import '../models/clip_settings.dart';
 
+/// 默认持续时间的存储键
+const String _defaultDurationKey = 'default_clip_duration_ms';
+
+/// 默认持续时间（4秒 = 4000毫秒）
+const int _initialDefaultDurationMs = 4000;
+
 /// 视频状态管理Provider
 class VideoProvider extends ChangeNotifier {
+  /// 用户设置的默认持续时间（毫秒）
+  int _defaultDurationMs = _initialDefaultDurationMs;
+  int get defaultDurationMs => _defaultDurationMs;
+  
+  /// 构造函数 - 自动加载保存的设置
+  VideoProvider() {
+    _loadDefaultDuration();
+  }
+  
+  /// 加载保存的默认持续时间
+  Future<void> _loadDefaultDuration() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedDuration = prefs.getInt(_defaultDurationKey);
+      if (savedDuration != null) {
+        _defaultDurationMs = savedDuration;
+        debugPrint('已加载保存的默认持续时间: ${_defaultDurationMs / 1000}秒');
+      }
+    } catch (e) {
+      debugPrint('加载默认持续时间失败: $e');
+    }
+  }
+  
+  /// 保存默认持续时间（用户确认时调用）
+  Future<void> saveDefaultDuration(int durationMs) async {
+    try {
+      _defaultDurationMs = durationMs;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_defaultDurationKey, durationMs);
+      debugPrint('已保存默认持续时间: ${durationMs / 1000}秒');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('保存默认持续时间失败: $e');
+    }
+  }
+  
+  /// 保存默认持续时间（秒）
+  Future<void> saveDefaultDurationSeconds(double seconds) async {
+    await saveDefaultDuration((seconds * 1000).round());
+  }
+  
   /// 视频文件列表（仅存储路径，零拷贝）
   List<VideoFile> _videoFiles = [];
   List<VideoFile> get videoFiles => _videoFiles;
@@ -118,10 +166,12 @@ class VideoProvider extends ChangeNotifier {
       video.width = _controller!.value.size.width.toInt();
       video.height = _controller!.value.size.height.toInt();
       
-      // 重置裁剪设置
+      // 重置裁剪设置 - 使用用户保存的默认持续时间
+      final videoDuration = video.durationMs ?? 0;
+      final clipDuration = _defaultDurationMs.clamp(0, videoDuration);
       _clipSettings = ClipSettings(
         startMs: 0,
-        durationMs: video.durationMs ?? 0,
+        durationMs: clipDuration,
       );
       
       // 设置播放速度
